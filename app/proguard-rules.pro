@@ -1,0 +1,1 @@
+-keep class com.wellbeing.tracker.service.ContentCounterService { *; }
