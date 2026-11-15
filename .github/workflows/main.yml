@@ -1,0 +1,40 @@
+name: Build APK
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+      - name: Unit tests and debug APK
+        run: |
+          set -o pipefail
+          gradle :app:testDebugUnitTest :app:assembleDebug --console=plain --stacktrace 2>&1 | tee build.log
+      - name: Show errors in summary
+        if: failure()
+        run: |
+          {
+            echo '## Build errors (এই অংশটা কপি করে আমাকে দাও)'
+            echo '```'
+            grep -E '^e: |error:|FAILED|What went wrong|Execution failed|Caused by|> .*(Unresolved|Cannot|Could not)' build.log | head -80
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: build-log
+          path: build.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
